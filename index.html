@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WC 2026">
+<meta name="description" content="2026 FIFA World Cup Knockout Tracker — Round of 32 & Round of 16">
+<meta name="theme-color" content="#0d1a12">
+<link rel="manifest" href="manifest.json">
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}</script>
+<title>🏆 WC 2026 · Knockout Tracker</title>
+<style>
+:root {
+  --green:#1a6b3a;--green2:#228b4a;--green3:#0d4020;
+  --gold:#c8922a;--gold2:#f0b84a;
+  --dark:#0d1a12;--surface:#162213;--card:#1e2e1f;--card2:#263828;
+  --border:#2e4232;--border2:#3a5040;
+  --text:#e8f0e9;--muted:#8aaa8e;
+  --red:#c0392b;--win:#27ae60;
+  --radius:12px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--dark);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;font-size:15px;line-height:1.45;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(160deg,#0d2e17 0%,#1a5c35 50%,#0d2e17 100%);padding:env(safe-area-inset-top,16px) 16px 14px;text-align:center;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:100}
+.hdr-trophy{font-size:26px}
+.hdr-title{font-size:19px;font-weight:800;letter-spacing:.5px;color:#fff;margin-top:3px}
+.hdr-sub{font-size:10px;color:var(--gold2);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+
+/* ── TABS ── */
+.main-tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border)}
+.main-tab{flex:1;padding:11px 4px;font-size:11px;font-weight:700;letter-spacing:.6px;text-align:center;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;text-transform:uppercase;transition:.15s;user-select:none}
+.main-tab.active{color:var(--gold2);border-bottom-color:var(--gold)}
+
+/* ── DAY FILTER ── */
+.filter-bar{padding:9px 12px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.fbtn{display:inline-block;padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;margin-right:6px;background:transparent;cursor:pointer;transition:all .15s;user-select:none}
+.fbtn.active{background:var(--green);border-color:var(--green);color:#fff}
+
+/* ── SECTIONS ── */
+.section{display:none}
+.section.active{display:block}
+.match-list{padding:8px 12px 100px}
+.day-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin:14px 0 7px;padding-left:2px;display:flex;align-items:center;gap:8px}
+.day-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── MATCH CARD ── */
+.mc{background:var(--card);border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--border);overflow:hidden;transition:border-color .15s}
+.mc.completed{border-color:#2a4a2a}
+
+.mc-head{padding:10px 14px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.mc-time{font-size:11px;font-weight:700;color:var(--gold2);background:rgba(200,146,42,.15);padding:3px 9px;border-radius:20px;white-space:nowrap}
+.mc-venue{font-size:10px;color:var(--muted);text-align:right;max-width:58%;line-height:1.3}
+
+.teams-row{display:flex;align-items:center;gap:4px;padding:2px 0}
+.team-block{flex:1;padding:10px 12px;cursor:pointer;border-radius:var(--radius-sm);transition:background .12s;min-width:0}
+.team-block:active{background:rgba(255,255,255,.06)}
+.team-flag{font-size:24px;line-height:1;display:block}
+.team-name{font-size:13px;font-weight:700;color:#fff;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-name.fav{color:var(--gold2)}
+.team-player{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-right{text-align:right}
+.vs{font-size:11px;font-weight:800;color:var(--border2);flex-shrink:0;letter-spacing:1px}
+
+.fav-row{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.15)}
+.fav-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.fav-val{font-size:11px;font-weight:700;color:var(--gold2)}
+.tap-hint{font-size:10px;color:var(--muted)}
+
+/* ── RESULT STRIP ── */
+.result-strip{border-top:1px solid var(--border);background:#0f2018;padding:10px 14px}
+.result-done{display:flex;align-items:center;justify-content:space-between}
+.result-score{font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px}
+.result-winner{font-size:11px;font-weight:700;color:#4cdd8a;background:rgba(39,174,96,.18);padding:3px 10px;border-radius:20px}
+.result-clear{font-size:10px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border)}
+.result-entry{display:flex;gap:8px;align-items:center}
+.result-input{flex:1;background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;-webkit-appearance:none}
+.result-input:focus{outline:none;border-color:var(--green2)}
+.result-input::placeholder{color:var(--muted)}
+.save-btn{background:var(--green);border:none;border-radius:var(--radius-sm);padding:8px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.save-btn:active{background:var(--green2)}
+
+/* WINNER SELECTOR */
+.winner-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.w-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;width:100%}
+.wbtn{flex:1;padding:7px 10px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;min-height:36px;transition:all .15s}
+.wbtn.selected{background:var(--win);border-color:var(--win);color:#fff}
+
+/* ── GROUP DRAWER ── */
+.g-drawer{display:none;background:#0f1f12;border-top:1px solid var(--border);padding:14px}
+.g-drawer.open{display:block}
+.g-team-hdr{font-size:13px;font-weight:800;color:var(--gold2);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.g-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:12px}
+.g-table th{color:var(--muted);font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;padding:0 4px 6px;text-align:left;border-bottom:1px solid var(--border)}
+.g-table th:not(:first-child){text-align:center}
+.g-table td{padding:6px 4px;border-bottom:1px solid rgba(46,66,50,.5);vertical-align:middle}
+.g-table td:not(:first-child){text-align:center}
+.g-table tr:last-child td{border-bottom:none}
+.g-table .hl td{color:var(--gold2);font-weight:700}
+.g-table .out td{color:var(--muted)}
+.g-matches-ttl{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.g-match-row{font-size:11.5px;color:var(--text);padding:5px 0;border-bottom:1px solid rgba(46,66,50,.4);line-height:1.4;display:flex;align-items:center;gap:6px}
+.g-match-row:last-child{border-bottom:none}
+.rbadge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.rw{background:rgba(39,174,96,.25);color:#4cdd8a}
+.rd{background:rgba(41,128,185,.2);color:#7ec8e3}
+.rl{background:rgba(192,57,43,.2);color:#f1948a}
+.g-close{display:block;width:100%;padding:8px;background:var(--border);border:none;border-radius:var(--radius-sm);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;font-family:inherit}
+
+/* ── ROUND OF 16 ── */
+.r16-wrap{padding:8px 12px 100px}
+.r16-section{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin:14px 0 8px;display:flex;align-items:center;gap:8px}
+.r16-section::after{content:'';flex:1;height:1px;background:var(--border)}
+.r16-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;padding:13px 14px}
+.r16-meta{font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+.r16-meta strong{color:var(--gold2)}
+.r16-mu{display:flex;align-items:center;gap:8px}
+.r16-slot{flex:1;background:#0d1e10;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .3s}
+.r16-slot.filled{border-color:var(--green2);background:#122018}
+.r16-slot-flag{font-size:20px;display:block;margin-bottom:3px}
+.r16-slot-name{font-size:11px;font-weight:700;color:#fff;line-height:1.2}
+.r16-tbd{font-size:10px;color:var(--muted)}
+.r16-vs{font-size:10px;font-weight:800;color:var(--muted);flex-shrink:0}
+.r16-note{font-size:10px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.4}
+
+/* ── FOOTER ── */
+.footer{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 16px env(safe-area-inset-bottom,8px);font-size:10px;color:var(--muted);text-align:center;z-index:50}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hdr-trophy">🏆</div>
+  <div class="hdr-title">World Cup 2026</div>
+  <div class="hdr-sub">Knockout Tracker · R32 & R16</div>
+</div>
+
+<div class="main-tabs">
+  <div class="main-tab active" onclick="showSection('r32')">Round of 32</div>
+  <div class="main-tab" onclick="showSection('r16')">Round of 16</div>
+</div>
+
+<!-- DAY FILTER (R32 only) -->
+<div class="filter-bar" id="filterBar">
+  <button class="fbtn active" onclick="filterDay('all',this)">All</button>
+  <button class="fbtn" onclick="filterDay('sun',this)">Sun Jun 28</button>
+  <button class="fbtn" onclick="filterDay('mon',this)">Mon Jun 29</button>
+  <button class="fbtn" onclick="filterDay('tue',this)">Tue Jun 30</button>
+  <button class="fbtn" onclick="filterDay('wed',this)">Wed Jul 1</button>
+  <button class="fbtn" onclick="filterDay('thu',this)">Thu Jul 2</button>
+  <button class="fbtn" onclick="filterDay('fri',this)">Fri Jul 3</button>
+</div>
+
+<div id="sec-r32" class="section active">
+  <div class="match-list" id="matchList"></div>
+</div>
+
+<div id="sec-r16" class="section">
+  <div class="r16-wrap" id="r16List"></div>
+</div>
+
+<div class="footer">⭐ Favorite in gold &nbsp;·&nbsp; Tap team name for group results &nbsp;·&nbsp; Enter score after match</div>
+
+<script>
+// ─── TEAM DATA ──────────────────────────────────────────────────────────────
+const T = {
+  "South Africa":{flag:"🇿🇦",group:"A",keyPlayer:"Percy Tau",
+    standings:[{t:"Mexico",w:3,d:0,l:0,gd:6,pts:9,adv:true},{t:"South Africa",w:1,d:1,l:1,gd:-1,pts:4,adv:true},{t:"South Korea",w:1,d:0,l:2,gd:-1,pts:3,adv:false},{t:"Czechia",w:0,d:1,l:2,gd:-4,pts:1,adv:false}],
+    matches:[{d:"Jun 11",opp:"Mexico",s:"0–2",r:"L"},{d:"Jun 18",opp:"Czechia",s:"1–1",r:"D"},{d:"Jun 24",opp:"South Korea",s:"1–0",r:"W"}]},
+  "Canada":{flag:"🇨🇦",group:"B",keyPlayer:"Jonathan David",
+    standings:[{t:"Switzerland",w:2,d:1,l:0,gd:4,pts:7,adv:true},{t:"Canada",w:1,d:1,l:1,gd:5,pts:4,adv:true},{t:"Bosnia & Herz.",w:1,d:1,l:1,gd:-1,pts:4,adv:true},{t:"Qatar",w:0,d:1,l:2,gd:-8,pts:1,adv:false}],
+    matches:[{d:"Jun 12",opp:"Bosnia & Herz.",s:"1–1",r:"D"},{d:"Jun 18",opp:"Qatar",s:"6–0",r:"W"},{d:"Jun 24",opp:"Switzerland",s:"1–2",r:"L"}]},
+  "Brazil":{flag:"🇧🇷",group:"C",keyPlayer:"Vinícius Jr.",
+    standings:[{t:"Brazil",w:2,d:1,l:0,gd:6,pts:7,adv:true},{t:"Morocco",w:2,d:1,l:0,gd:3,pts:7,adv:true},{t:"Scotland",w:1,d:0,l:2,gd:-3,pts:3,adv:false},{t:"Haiti",w:0,d:0,l:3,gd:-6,pts:0,adv:false}],
+    matches:[{d:"Jun 13",opp:"Morocco",s:"1–1",r:"D"},{d:"Jun 19",opp:"Haiti",s:"3–0",r:"W"},{d:"Jun 24",opp:"Scotland",s:"3–0",r:"W"}]},
+  "Japan":{flag:"🇯🇵",group:"F",keyPlayer:"Takefusa Kubo",
+    standings:[{t:"Netherlands",w:2,d:1,l:0,gd:6,pts:7,adv:true},{t:"Japan",w:1,d:2,l:0,gd:4,pts:5,adv:true},{t:"Sweden",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Tunisia",w:0,d:0,l:3,gd:-10,pts:0,adv:false}],
+    matches:[{d:"Jun 14",opp:"Netherlands",s:"2–2",r:"D"},{d:"Jun 21",opp:"Sweden",s:"1–1",r:"D"},{d:"Jun 26",opp:"Tunisia",s:"2–0",r:"W"}]},
+  "Germany":{flag:"🇩🇪",group:"E",keyPlayer:"Florian Wirtz",
+    standings:[{t:"Germany",w:2,d:0,l:1,gd:6,pts:6,adv:true},{t:"Ivory Coast",w:2,d:0,l:1,gd:2,pts:6,adv:true},{t:"Ecuador",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Curaçao",w:0,d:1,l:2,gd:-8,pts:1,adv:false}],
+    matches:[{d:"Jun 14",opp:"Curaçao",s:"7–1",r:"W"},{d:"Jun 20",opp:"Ivory Coast",s:"2–1",r:"W"},{d:"Jun 26",opp:"Ecuador",s:"1–2",r:"L"}]},
+  "Paraguay":{flag:"🇵🇾",group:"D",keyPlayer:"Miguel Almirón",
+    standings:[{t:"USA",w:2,d:0,l:1,gd:4,pts:6,adv:true},{t:"Australia",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Paraguay",w:1,d:1,l:1,gd:-2,pts:4,adv:true},{t:"Türkiye",w:1,d:0,l:2,gd:-2,pts:3,adv:false}],
+    matches:[{d:"Jun 12",opp:"USA",s:"1–4",r:"L"},{d:"Jun 20",opp:"Türkiye",s:"1–0",r:"W"},{d:"Jun 26",opp:"Australia",s:"0–0",r:"D"}]},
+  "Netherlands":{flag:"🇳🇱",group:"F",keyPlayer:"Cody Gakpo",
+    standings:[{t:"Netherlands",w:2,d:1,l:0,gd:6,pts:7,adv:true},{t:"Japan",w:1,d:2,l:0,gd:4,pts:5,adv:true},{t:"Sweden",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Tunisia",w:0,d:0,l:3,gd:-10,pts:0,adv:false}],
+    matches:[{d:"Jun 14",opp:"Japan",s:"2–2",r:"D"},{d:"Jun 21",opp:"Tunisia",s:"3–1",r:"W"},{d:"Jun 26",opp:"Sweden",s:"2–0",r:"W"}]},
+  "Morocco":{flag:"🇲🇦",group:"C",keyPlayer:"Achraf Hakimi",
+    standings:[{t:"Brazil",w:2,d:1,l:0,gd:6,pts:7,adv:true},{t:"Morocco",w:2,d:1,l:0,gd:3,pts:7,adv:true},{t:"Scotland",w:1,d:0,l:2,gd:-3,pts:3,adv:false},{t:"Haiti",w:0,d:0,l:3,gd:-6,pts:0,adv:false}],
+    matches:[{d:"Jun 13",opp:"Brazil",s:"1–1",r:"D"},{d:"Jun 20",opp:"Scotland",s:"1–0",r:"W"},{d:"Jun 24",opp:"Haiti",s:"4–2",r:"W"}]},
+  "Ivory Coast":{flag:"🇨🇮",group:"E",keyPlayer:"Sébastien Haller",
+    standings:[{t:"Germany",w:2,d:0,l:1,gd:6,pts:6,adv:true},{t:"Ivory Coast",w:2,d:0,l:1,gd:2,pts:6,adv:true},{t:"Ecuador",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Curaçao",w:0,d:1,l:2,gd:-8,pts:1,adv:false}],
+    matches:[{d:"Jun 14",opp:"Ecuador",s:"1–0",r:"W"},{d:"Jun 20",opp:"Germany",s:"1–2",r:"L"},{d:"Jun 26",opp:"Curaçao",s:"2–0",r:"W"}]},
+  "Norway":{flag:"🇳🇴",group:"I",keyPlayer:"Erling Haaland",
+    standings:[{t:"France",w:3,d:0,l:0,gd:8,pts:9,adv:true},{t:"Norway",w:2,d:0,l:1,gd:1,pts:6,adv:true},{t:"Senegal",w:1,d:0,l:2,gd:-3,pts:3,adv:true},{t:"Iraq",w:0,d:0,l:3,gd:-6,pts:0,adv:false}],
+    matches:[{d:"Jun 15",opp:"France",s:"1–4",r:"L"},{d:"Jun 21",opp:"Iraq",s:"4–1",r:"W"},{d:"Jun 26",opp:"Senegal",s:"0–0",r:"D"}]},
+  "France":{flag:"🇫🇷",group:"I",keyPlayer:"Kylian Mbappé",
+    standings:[{t:"France",w:3,d:0,l:0,gd:8,pts:9,adv:true},{t:"Norway",w:2,d:0,l:1,gd:1,pts:6,adv:true},{t:"Senegal",w:1,d:0,l:2,gd:-3,pts:3,adv:true},{t:"Iraq",w:0,d:0,l:3,gd:-6,pts:0,adv:false}],
+    matches:[{d:"Jun 15",opp:"Senegal",s:"3–1",r:"W"},{d:"Jun 21",opp:"Iraq",s:"3–0",r:"W"},{d:"Jun 26",opp:"Norway",s:"4–1",r:"W"}]},
+  "Sweden":{flag:"🇸🇪",group:"F",keyPlayer:"Viktor Gyökeres",
+    standings:[{t:"Netherlands",w:2,d:1,l:0,gd:6,pts:7,adv:true},{t:"Japan",w:1,d:2,l:0,gd:4,pts:5,adv:true},{t:"Sweden",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Tunisia",w:0,d:0,l:3,gd:-10,pts:0,adv:false}],
+    matches:[{d:"Jun 14",opp:"Tunisia",s:"5–1",r:"W"},{d:"Jun 21",opp:"Netherlands",s:"1–3",r:"L"},{d:"Jun 26",opp:"Japan",s:"1–1",r:"D"}]},
+  "Mexico":{flag:"🇲🇽",group:"A",keyPlayer:"Raúl Jiménez",
+    standings:[{t:"Mexico",w:3,d:0,l:0,gd:6,pts:9,adv:true},{t:"South Africa",w:1,d:1,l:1,gd:-1,pts:4,adv:true},{t:"South Korea",w:1,d:0,l:2,gd:-1,pts:3,adv:false},{t:"Czechia",w:0,d:1,l:2,gd:-4,pts:1,adv:false}],
+    matches:[{d:"Jun 11",opp:"South Africa",s:"2–0",r:"W"},{d:"Jun 18",opp:"South Korea",s:"1–0",r:"W"},{d:"Jun 24",opp:"Czechia",s:"3–0",r:"W"}]},
+  "Ecuador":{flag:"🇪🇨",group:"E",keyPlayer:"Moisés Caicedo",
+    standings:[{t:"Germany",w:2,d:0,l:1,gd:6,pts:6,adv:true},{t:"Ivory Coast",w:2,d:0,l:1,gd:2,pts:6,adv:true},{t:"Ecuador",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Curaçao",w:0,d:1,l:2,gd:-8,pts:1,adv:false}],
+    matches:[{d:"Jun 14",opp:"Ivory Coast",s:"0–1",r:"L"},{d:"Jun 21",opp:"Curaçao",s:"2–0",r:"W"},{d:"Jun 26",opp:"Germany",s:"2–1",r:"W"}]},
+  "England":{flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",group:"L",keyPlayer:"Jude Bellingham",
+    standings:[{t:"England",w:2,d:1,l:0,gd:4,pts:7,adv:true},{t:"Croatia",w:2,d:0,l:1,gd:0,pts:6,adv:true},{t:"Ghana",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Panama",w:0,d:0,l:3,gd:-4,pts:0,adv:false}],
+    matches:[{d:"Jun 16",opp:"Croatia",s:"4–2",r:"W"},{d:"Jun 22",opp:"Ghana",s:"2–0",r:"W"},{d:"Jun 27",opp:"Panama",s:"2–0",r:"W"}]},
+  "DR Congo":{flag:"🇨🇩",group:"K",keyPlayer:"Dodi Lukébakio",
+    standings:[{t:"Colombia",w:2,d:1,l:0,gd:3,pts:7,adv:true},{t:"Portugal",w:1,d:2,l:0,gd:5,pts:5,adv:true},{t:"DR Congo",w:1,d:1,l:1,gd:1,pts:4,adv:true},{t:"Uzbekistan",w:0,d:0,l:3,gd:-9,pts:0,adv:false}],
+    matches:[{d:"Jun 16",opp:"Uzbekistan",s:"0–0",r:"D"},{d:"Jun 22",opp:"Portugal",s:"1–1",r:"D"},{d:"Jun 27",opp:"Colombia",s:"0–2",r:"L"}]},
+  "Belgium":{flag:"🇧🇪",group:"G",keyPlayer:"Kevin De Bruyne",
+    standings:[{t:"Belgium",w:1,d:2,l:0,gd:4,pts:5,adv:true},{t:"Egypt",w:1,d:2,l:0,gd:2,pts:5,adv:true},{t:"Iran",w:0,d:3,l:0,gd:0,pts:3,adv:false},{t:"New Zealand",w:0,d:1,l:2,gd:-6,pts:1,adv:false}],
+    matches:[{d:"Jun 15",opp:"Egypt",s:"1–1",r:"D"},{d:"Jun 21",opp:"Iran",s:"0–0",r:"D"},{d:"Jun 26",opp:"New Zealand",s:"5–1",r:"W"}]},
+  "Senegal":{flag:"🇸🇳",group:"I",keyPlayer:"Sadio Mané",
+    standings:[{t:"France",w:3,d:0,l:0,gd:8,pts:9,adv:true},{t:"Norway",w:2,d:0,l:1,gd:1,pts:6,adv:true},{t:"Senegal",w:1,d:0,l:2,gd:-3,pts:3,adv:true},{t:"Iraq",w:0,d:0,l:3,gd:-6,pts:0,adv:false}],
+    matches:[{d:"Jun 15",opp:"France",s:"1–3",r:"L"},{d:"Jun 21",opp:"Iraq",s:"5–0",r:"W"},{d:"Jun 26",opp:"Norway",s:"0–0",r:"D"}]},
+  "USA":{flag:"🇺🇸",group:"D",keyPlayer:"Christian Pulisic",
+    standings:[{t:"USA",w:2,d:0,l:1,gd:4,pts:6,adv:true},{t:"Australia",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Paraguay",w:1,d:1,l:1,gd:-2,pts:4,adv:true},{t:"Türkiye",w:1,d:0,l:2,gd:-2,pts:3,adv:false}],
+    matches:[{d:"Jun 12",opp:"Paraguay",s:"4–1",r:"W"},{d:"Jun 19",opp:"Australia",s:"2–0",r:"W"},{d:"Jun 26",opp:"Türkiye",s:"2–3",r:"L"}]},
+  "Bosnia & Herz.":{flag:"🇧🇦",group:"B",keyPlayer:"Edin Džeko",
+    standings:[{t:"Switzerland",w:2,d:1,l:0,gd:4,pts:7,adv:true},{t:"Canada",w:1,d:1,l:1,gd:5,pts:4,adv:true},{t:"Bosnia & Herz.",w:1,d:1,l:1,gd:-1,pts:4,adv:true},{t:"Qatar",w:0,d:1,l:2,gd:-8,pts:1,adv:false}],
+    matches:[{d:"Jun 12",opp:"Canada",s:"1–1",r:"D"},{d:"Jun 19",opp:"Qatar",s:"3–1",r:"W"},{d:"Jun 24",opp:"Switzerland",s:"1–4",r:"L"}]},
+  "Spain":{flag:"🇪🇸",group:"H",keyPlayer:"Lamine Yamal",
+    standings:[{t:"Spain",w:2,d:1,l:0,gd:5,pts:7,adv:true},{t:"Cape Verde",w:0,d:3,l:0,gd:0,pts:3,adv:true},{t:"Uruguay",w:0,d:2,l:1,gd:-1,pts:2,adv:false},{t:"Saudi Arabia",w:0,d:2,l:1,gd:-4,pts:2,adv:false}],
+    matches:[{d:"Jun 15",opp:"Cape Verde",s:"0–0",r:"D"},{d:"Jun 21",opp:"Saudi Arabia",s:"4–0",r:"W"},{d:"Jun 26",opp:"Uruguay",s:"1–0",r:"W"}]},
+  "Austria":{flag:"🇦🇹",group:"J",keyPlayer:"Marcel Sabitzer",
+    standings:[{t:"Argentina",w:3,d:0,l:0,gd:7,pts:9,adv:true},{t:"Austria",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Algeria",w:1,d:1,l:1,gd:-2,pts:4,adv:true},{t:"Jordan",w:0,d:0,l:3,gd:-5,pts:0,adv:false}],
+    matches:[{d:"Jun 16",opp:"Jordan",s:"3–1",r:"W"},{d:"Jun 22",opp:"Argentina",s:"0–2",r:"L"},{d:"Jun 27",opp:"Algeria",s:"3–3",r:"D"}]},
+  "Portugal":{flag:"🇵🇹",group:"K",keyPlayer:"Cristiano Ronaldo",
+    standings:[{t:"Colombia",w:2,d:1,l:0,gd:3,pts:7,adv:true},{t:"Portugal",w:1,d:2,l:0,gd:5,pts:5,adv:true},{t:"DR Congo",w:1,d:1,l:1,gd:1,pts:4,adv:true},{t:"Uzbekistan",w:0,d:0,l:3,gd:-9,pts:0,adv:false}],
+    matches:[{d:"Jun 16",opp:"DR Congo",s:"1–1",r:"D"},{d:"Jun 23",opp:"Uzbekistan",s:"5–0",r:"W"},{d:"Jun 27",opp:"Colombia",s:"0–0",r:"D"}]},
+  "Croatia":{flag:"🇭🇷",group:"L",keyPlayer:"Luka Modrić",
+    standings:[{t:"England",w:2,d:1,l:0,gd:4,pts:7,adv:true},{t:"Croatia",w:2,d:0,l:1,gd:0,pts:6,adv:true},{t:"Ghana",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Panama",w:0,d:0,l:3,gd:-4,pts:0,adv:false}],
+    matches:[{d:"Jun 16",opp:"England",s:"2–4",r:"L"},{d:"Jun 23",opp:"Panama",s:"2–0",r:"W"},{d:"Jun 27",opp:"Ghana",s:"1–0",r:"W"}]},
+  "Switzerland":{flag:"🇨🇭",group:"B",keyPlayer:"Granit Xhaka",
+    standings:[{t:"Switzerland",w:2,d:1,l:0,gd:4,pts:7,adv:true},{t:"Canada",w:1,d:1,l:1,gd:5,pts:4,adv:true},{t:"Bosnia & Herz.",w:1,d:1,l:1,gd:-1,pts:4,adv:true},{t:"Qatar",w:0,d:1,l:2,gd:-8,pts:1,adv:false}],
+    matches:[{d:"Jun 13",opp:"Qatar",s:"1–1",r:"D"},{d:"Jun 19",opp:"Bosnia & Herz.",s:"4–1",r:"W"},{d:"Jun 24",opp:"Canada",s:"2–1",r:"W"}]},
+  "Algeria":{flag:"🇩🇿",group:"J",keyPlayer:"Riyad Mahrez",
+    standings:[{t:"Argentina",w:3,d:0,l:0,gd:7,pts:9,adv:true},{t:"Austria",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Algeria",w:1,d:1,l:1,gd:-2,pts:4,adv:true},{t:"Jordan",w:0,d:0,l:3,gd:-5,pts:0,adv:false}],
+    matches:[{d:"Jun 15",opp:"Argentina",s:"0–3",r:"L"},{d:"Jun 22",opp:"Jordan",s:"2–0",r:"W"},{d:"Jun 27",opp:"Austria",s:"3–3",r:"D"}]},
+  "Australia":{flag:"🇦🇺",group:"D",keyPlayer:"Mathew Leckie",
+    standings:[{t:"USA",w:2,d:0,l:1,gd:4,pts:6,adv:true},{t:"Australia",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Paraguay",w:1,d:1,l:1,gd:-2,pts:4,adv:true},{t:"Türkiye",w:1,d:0,l:2,gd:-2,pts:3,adv:false}],
+    matches:[{d:"Jun 13",opp:"Türkiye",s:"2–0",r:"W"},{d:"Jun 19",opp:"USA",s:"0–2",r:"L"},{d:"Jun 26",opp:"Paraguay",s:"0–0",r:"D"}]},
+  "Egypt":{flag:"🇪🇬",group:"G",keyPlayer:"Mohamed Salah",
+    standings:[{t:"Belgium",w:1,d:2,l:0,gd:4,pts:5,adv:true},{t:"Egypt",w:1,d:2,l:0,gd:2,pts:5,adv:true},{t:"Iran",w:0,d:3,l:0,gd:0,pts:3,adv:false},{t:"New Zealand",w:0,d:1,l:2,gd:-6,pts:1,adv:false}],
+    matches:[{d:"Jun 15",opp:"Belgium",s:"1–1",r:"D"},{d:"Jun 21",opp:"Iran",s:"1–1",r:"D"},{d:"Jun 26",opp:"New Zealand",s:"3–1",r:"W"}]},
+  "Argentina":{flag:"🇦🇷",group:"J",keyPlayer:"Lionel Messi",
+    standings:[{t:"Argentina",w:3,d:0,l:0,gd:7,pts:9,adv:true},{t:"Austria",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Algeria",w:1,d:1,l:1,gd:-2,pts:4,adv:true},{t:"Jordan",w:0,d:0,l:3,gd:-5,pts:0,adv:false}],
+    matches:[{d:"Jun 16",opp:"Algeria",s:"3–0",r:"W"},{d:"Jun 22",opp:"Austria",s:"2–0",r:"W"},{d:"Jun 27",opp:"Jordan",s:"3–1",r:"W"}]},
+  "Cape Verde":{flag:"🇨🇻",group:"H",keyPlayer:"Gelson Martins",
+    standings:[{t:"Spain",w:2,d:1,l:0,gd:5,pts:7,adv:true},{t:"Cape Verde",w:0,d:3,l:0,gd:0,pts:3,adv:true},{t:"Uruguay",w:0,d:2,l:1,gd:-1,pts:2,adv:false},{t:"Saudi Arabia",w:0,d:2,l:1,gd:-4,pts:2,adv:false}],
+    matches:[{d:"Jun 15",opp:"Spain",s:"0–0",r:"D"},{d:"Jun 21",opp:"Uruguay",s:"2–2",r:"D"},{d:"Jun 26",opp:"Saudi Arabia",s:"0–0",r:"D"}]},
+  "Colombia":{flag:"🇨🇴",group:"K",keyPlayer:"Luis Díaz",
+    standings:[{t:"Colombia",w:2,d:1,l:0,gd:3,pts:7,adv:true},{t:"Portugal",w:1,d:2,l:0,gd:5,pts:5,adv:true},{t:"DR Congo",w:1,d:1,l:1,gd:1,pts:4,adv:true},{t:"Uzbekistan",w:0,d:0,l:3,gd:-9,pts:0,adv:false}],
+    matches:[{d:"Jun 17",opp:"Uzbekistan",s:"3–1",r:"W"},{d:"Jun 23",opp:"DR Congo",s:"1–0",r:"W"},{d:"Jun 27",opp:"Portugal",s:"0–0",r:"D"}]},
+  "Ghana":{flag:"🇬🇭",group:"L",keyPlayer:"Mohammed Kudus",
+    standings:[{t:"England",w:2,d:1,l:0,gd:4,pts:7,adv:true},{t:"Croatia",w:2,d:0,l:1,gd:0,pts:6,adv:true},{t:"Ghana",w:1,d:1,l:1,gd:0,pts:4,adv:true},{t:"Panama",w:0,d:0,l:3,gd:-4,pts:0,adv:false}],
+    matches:[{d:"Jun 17",opp:"Panama",s:"1–0",r:"W"},{d:"Jun 23",opp:"England",s:"0–2",r:"L"},{d:"Jun 27",opp:"Croatia",s:"0–1",r:"L"}]},
+};
+
+// ─── R32 MATCHES ────────────────────────────────────────────────────────────
+const MATCHES = [
+  {id:"m1",day:"sun",dayLabel:"Sunday · June 28",time:"12:00 PM PT",t1:"South Africa",t2:"Canada",venue:"SoFi Stadium · Los Angeles, CA",fav:"Canada",r16:"r16-a1",slot:0},
+  {id:"m2",day:"mon",dayLabel:"Monday · June 29",time:"10:00 AM PT",t1:"Brazil",t2:"Japan",venue:"NRG Stadium · Houston, TX",fav:"Brazil",r16:"r16-a1",slot:1},
+  {id:"m3",day:"mon",dayLabel:"Monday · June 29",time:"1:30 PM PT",t1:"Germany",t2:"Paraguay",venue:"Gillette Stadium · Boston, MA",fav:"Germany",r16:"r16-b1",slot:0},
+  {id:"m4",day:"mon",dayLabel:"Monday · June 29",time:"6:00 PM PT",t1:"Netherlands",t2:"Morocco",venue:"Estadio BBVA · Monterrey, Mexico",fav:"Netherlands",r16:"r16-b2",slot:0},
+  {id:"m5",day:"tue",dayLabel:"Tuesday · June 30",time:"10:00 AM PT",t1:"Ivory Coast",t2:"Norway",venue:"AT&T Stadium · Arlington, TX",fav:"Norway",r16:"r16-b2",slot:1},
+  {id:"m6",day:"tue",dayLabel:"Tuesday · June 30",time:"2:00 PM PT",t1:"France",t2:"Sweden",venue:"MetLife Stadium · E. Rutherford, NJ",fav:"France",r16:"r16-b1",slot:1},
+  {id:"m7",day:"tue",dayLabel:"Tuesday · June 30",time:"6:00 PM PT",t1:"Mexico",t2:"Ecuador",venue:"Estadio Azteca · Mexico City",fav:"Mexico",r16:"r16-a2",slot:0},
+  {id:"m8",day:"wed",dayLabel:"Wednesday · July 1",time:"9:00 AM PT",t1:"England",t2:"DR Congo",venue:"Mercedes-Benz Stadium · Atlanta, GA",fav:"England",r16:"r16-a2",slot:1},
+  {id:"m9",day:"wed",dayLabel:"Wednesday · July 1",time:"1:00 PM PT",t1:"Belgium",t2:"Senegal",venue:"Lumen Field · Seattle, WA",fav:"Belgium",r16:"r16-c1",slot:0},
+  {id:"m10",day:"wed",dayLabel:"Wednesday · July 1",time:"5:00 PM PT",t1:"USA",t2:"Bosnia & Herz.",venue:"Levi's Stadium · San Francisco, CA",fav:"USA",r16:"r16-c1",slot:1},
+  {id:"m11",day:"thu",dayLabel:"Thursday · July 2",time:"12:00 PM PT",t1:"Spain",t2:"Austria",venue:"SoFi Stadium · Los Angeles, CA",fav:"Spain",r16:"r16-c2",slot:0},
+  {id:"m12",day:"thu",dayLabel:"Thursday · July 2",time:"4:00 PM PT",t1:"Portugal",t2:"Croatia",venue:"BMO Field · Toronto, Canada",fav:"Portugal",r16:"r16-c2",slot:1},
+  {id:"m13",day:"thu",dayLabel:"Thursday · July 2",time:"8:00 PM PT",t1:"Switzerland",t2:"Algeria",venue:"BC Place · Vancouver, Canada",fav:"Switzerland",r16:"r16-d1",slot:0},
+  {id:"m14",day:"fri",dayLabel:"Friday · July 3",time:"11:00 AM PT",t1:"Australia",t2:"Egypt",venue:"AT&T Stadium · Dallas, TX",fav:"Egypt",r16:"r16-d1",slot:1},
+  {id:"m15",day:"fri",dayLabel:"Friday · July 3",time:"3:00 PM PT",t1:"Argentina",t2:"Cape Verde",venue:"Hard Rock Stadium · Miami, FL",fav:"Argentina",r16:"r16-d2",slot:0},
+  {id:"m16",day:"fri",dayLabel:"Friday · July 3",time:"6:30 PM PT",t1:"Colombia",t2:"Ghana",venue:"Arrowhead Stadium · Kansas City, MO",fav:"Colombia",r16:"r16-d2",slot:1},
+];
+
+// ─── R16 STRUCTURE ──────────────────────────────────────────────────────────
+const R16 = [
+  {id:"r16-a1",label:"Match A1",date:"Sat Jul 4 · 10:00 AM PT",venue:"NRG Stadium · Houston, TX",feeds:["m2","m1"]},
+  {id:"r16-a2",label:"Match A2",date:"Sun Jul 5 · 5:00 PM PT",venue:"Estadio Azteca · Mexico City",feeds:["m7","m8"]},
+  {id:"r16-b1",label:"Match B1",date:"Sat Jul 4 · 2:00 PM PT",venue:"Lincoln Financial Field · Philadelphia, PA",feeds:["m3","m6"]},
+  {id:"r16-b2",label:"Match B2",date:"Sun Jul 5 · 8:00 PM PT",venue:"MetLife Stadium · E. Rutherford, NJ",feeds:["m4","m5"]},
+  {id:"r16-c1",label:"Match C1",date:"Mon Jul 6 · 3:00 PM PT",venue:"Lumen Field · Seattle, WA",feeds:["m9","m10"]},
+  {id:"r16-c2",label:"Match C2",date:"Mon Jul 6 · 8:00 PM PT",venue:"AT&T Stadium · Dallas, TX",feeds:["m11","m12"]},
+  {id:"r16-d1",label:"Match D1",date:"Tue Jul 7 · 1:00 PM PT",venue:"BC Place · Vancouver, Canada",feeds:["m13","m14"]},
+  {id:"r16-d2",label:"Match D2",date:"Tue Jul 7 · 4:00 PM PT",venue:"Mercedes-Benz Stadium · Atlanta, GA",feeds:["m15","m16"]},
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let state = {results:{}, openDrawer:null, filter:'all'};
+try { const s = localStorage.getItem('wc26_state'); if(s) state = {...state,...JSON.parse(s)}; } catch(e){}
+
+function save() {
+  try { localStorage.setItem('wc26_state', JSON.stringify(state)); } catch(e){}
+}
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function showSection(id) {
+  document.querySelectorAll('.main-tab').forEach((t,i)=>t.classList.toggle('active',['r32','r16'][i]===id));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.getElementById('filterBar').style.display = id==='r32' ? '' : 'none';
+  if(id==='r16') renderR16();
+}
+
+// ─── DAY FILTER ──────────────────────────────────────────────────────────────
+function filterDay(day, btn) {
+  state.filter = day;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderR32();
+}
+
+// ─── DRAWER ──────────────────────────────────────────────────────────────────
+function openDrawer(matchId, teamName) {
+  const key = matchId+'|'+teamName;
+  state.openDrawer = state.openDrawer === key ? null : key;
+  renderR32();
+  if(state.openDrawer) {
+    setTimeout(()=>{
+      const el = document.getElementById('mc-'+matchId);
+      if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+    }, 60);
+  }
+}
+
+function closeDrawer() { state.openDrawer = null; renderR32(); }
+
+function drawerHTML(teamName) {
+  const t = T[teamName];
+  if(!t) return '';
+  const rows = t.standings.map(s=>{
+    const hl = s.t===teamName || s.t.startsWith(teamName.split(' ')[0]);
+    const cls = hl ? 'hl' : (!s.adv ? 'out' : '');
+    return `<tr class="${cls}"><td>${s.adv?'✅':'❌'} ${s.t}</td><td>${s.w}</td><td>${s.d}</td><td>${s.l}</td><td>${s.gd>0?'+':''}${s.gd}</td><td><strong>${s.pts}</strong></td></tr>`;
+  }).join('');
+  const mrows = t.matches.map(m=>`
+    <div class="g-match-row">
+      <span class="rbadge ${m.r==='W'?'rw':m.r==='D'?'rd':'rl'}">${m.r}</span>
+      ${m.d} · vs ${m.opp} — <strong>${m.s}</strong>
+    </div>`).join('');
+  return `
+    <div class="g-team-hdr">${t.flag} ${teamName} · Group ${t.group}</div>
+    <table class="g-table">
+      <thead><tr><th>Team</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="g-matches-ttl">Group Stage Results</div>
+    ${mrows}
+    <button class="g-close" onclick="closeDrawer()">✕ Close</button>`;
+}
+
+// ─── RESULT ENTRY ────────────────────────────────────────────────────────────
+function saveResult(id) {
+  const inp = document.getElementById('inp-'+id);
+  if(!inp) return;
+  const val = inp.value.trim();
+  if(!val) return;
+  if(!state.results[id]) state.results[id] = {};
+  state.results[id].score = val;
+  save();
+  renderR32();
+  renderR16();
+}
+
+function selectWinner(matchId, teamName) {
+  if(!state.results[matchId]) state.results[matchId] = {};
+  // toggle
+  if(state.results[matchId].winner === teamName) {
+    delete state.results[matchId].winner;
+  } else {
+    state.results[matchId].winner = teamName;
+  }
+  save();
+  renderR32();
+  renderR16();
+}
+
+function clearResult(id) {
+  delete state.results[id];
+  save();
+  renderR32();
+  renderR16();
+}
+
+// ─── RENDER R32 ──────────────────────────────────────────────────────────────
+function renderR32() {
+  const filtered = MATCHES.filter(m => state.filter==='all' || m.day===state.filter);
+  let html = '';
+  let lastDay = null;
+
+  filtered.forEach(m => {
+    if(m.dayLabel !== lastDay) {
+      html += `<div class="day-label">${m.dayLabel}</div>`;
+      lastDay = m.dayLabel;
+    }
+    const t1 = T[m.t1]||{flag:'🏳️',keyPlayer:'—'};
+    const t2 = T[m.t2]||{flag:'🏳️',keyPlayer:'—'};
+    const res = state.results[m.id]||{};
+    const hasScore = !!res.score;
+    const winner = res.winner||null;
+    const drawerKey = state.openDrawer;
+    const d1open = drawerKey === m.id+'|'+m.t1;
+    const d2open = drawerKey === m.id+'|'+m.t2;
+
+    // result strip
+    let resultHTML = '';
+    if(hasScore) {
+      resultHTML = `
+        <div class="result-strip">
+          <div class="result-done">
+            <div>
+              <div class="result-score">⚽ ${res.score}</div>
+              ${winner ? `<div class="result-winner">🏆 ${winner} advance</div>` : ''}
+            </div>
+            <button class="result-clear" onclick="clearResult('${m.id}')">✕ Clear</button>
+          </div>
+          <div class="winner-row" style="margin-top:10px">
+            <div class="w-lbl">Mark winner (if not obvious from score)</div>
+            <button class="wbtn${winner===m.t1?' selected':''}" onclick="selectWinner('${m.id}','${m.t1.replace(/'/g,"\\'")}')">
+              ${t1.flag} ${m.t1}
+            </button>
+            <button class="wbtn${winner===m.t2?' selected':''}" onclick="selectWinner('${m.id}','${m.t2.replace(/'/g,"\\'")}')">
+              ${t2.flag} ${m.t2}
+            </button>
+          </div>
+        </div>`;
+    } else {
+      resultHTML = `
+        <div class="result-strip">
+          <div class="result-entry">
+            <input class="result-input" id="inp-${m.id}" type="text" placeholder="Enter score e.g. Canada 2–1 South Africa"
+              onkeydown="if(event.key==='Enter')saveResult('${m.id}')">
+            <button class="save-btn" onclick="saveResult('${m.id}')">Save</button>
+          </div>
+        </div>`;
+    }
+
+    html += `
+    <div class="mc${hasScore?' completed':''}" id="mc-${m.id}">
+      <div class="mc-head">
+        <span class="mc-time">⏱ ${m.time}</span>
+        <span class="mc-venue">${m.venue}</span>
+      </div>
+      <div class="teams-row">
+        <div class="team-block" onclick="openDrawer('${m.id}','${m.t1.replace(/'/g,"\\'")}')">
+          <span class="team-flag">${t1.flag}</span>
+          <div class="team-name${m.fav===m.t1?' fav':''}">${m.t1}${m.fav===m.t1?' ⭐':''}</div>
+          <div class="team-player">👤 ${t1.keyPlayer}</div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team-block team-right" onclick="openDrawer('${m.id}','${m.t2.replace(/'/g,"\\'")}')">
+          <span class="team-flag">${t2.flag}</span>
+          <div class="team-name${m.fav===m.t2?' fav':''}">${m.fav===m.t2?'⭐ ':''}${m.t2}</div>
+          <div class="team-player">${t2.keyPlayer} 👤</div>
+        </div>
+      </div>
+      <div class="fav-row">
+        <span class="fav-lbl">Favorite</span>
+        <span class="fav-val">⭐ ${m.fav}</span>
+        <span class="tap-hint">Tap name for group stats</span>
+      </div>
+      ${resultHTML}
+      <div class="g-drawer${d1open?' open':''}" id="gd-${m.id}-t1">${d1open?drawerHTML(m.t1):''}</div>
+      <div class="g-drawer${d2open?' open':''}" id="gd-${m.id}-t2">${d2open?drawerHTML(m.t2):''}</div>
+    </div>`;
+  });
+
+  if(!filtered.length) html = '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:14px">No matches this day.</div>';
+  document.getElementById('matchList').innerHTML = html;
+}
+
+// ─── RENDER R16 ──────────────────────────────────────────────────────────────
+function renderR16() {
+  const halves = [
+    {label:'Bracket A / B — Top Half', ids:['r16-a1','r16-b1','r16-a2','r16-b2']},
+    {label:'Bracket C / D — Bottom Half', ids:['r16-c1','r16-d1','r16-c2','r16-d2']},
+  ];
+  let html = '';
+  halves.forEach(h => {
+    html += `<div class="r16-section">${h.label}</div>`;
+    h.ids.forEach(rid => {
+      const r = R16.find(x=>x.id===rid);
+      const w0 = r.feeds[0] ? (state.results[r.feeds[0]]||{}).winner : null;
+      const w1 = r.feeds[1] ? (state.results[r.feeds[1]]||{}).winner : null;
+      const t0 = w0 ? T[w0] : null;
+      const t1 = w1 ? T[w1] : null;
+      html += `
+      <div class="r16-card">
+        <div class="r16-meta"><strong>${r.label}</strong> &nbsp;·&nbsp; ${r.date} &nbsp;·&nbsp; ${r.venue}</div>
+        <div class="r16-mu">
+          <div class="r16-slot${t0?' filled':''}">
+            ${t0 ? `<span class="r16-slot-flag">${t0.flag}</span><div class="r16-slot-name">${w0}</div>`
+                  : `<span class="r16-tbd">TBD</span>`}
+          </div>
+          <div class="r16-vs">VS</div>
+          <div class="r16-slot${t1?' filled':''}">
+            ${t1 ? `<span class="r16-slot-flag">${t1.flag}</span><div class="r16-slot-name">${w1}</div>`
+                  : `<span class="r16-tbd">TBD</span>`}
+          </div>
+        </div>
+        ${!t0&&!t1 ? '<div class="r16-note">Select R32 winners to populate this slot</div>' : ''}
+      </div>`;
+    });
+  });
+  document.getElementById('r16List').innerHTML = html;
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderR32();
+renderR16();
+</script>
+</body>
+</html>
